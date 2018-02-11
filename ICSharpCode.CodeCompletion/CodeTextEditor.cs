@@ -8,6 +8,7 @@ using System.Windows.Input;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.NRefactory.Editor;
+using System.Windows;
 
 namespace ICSharpCode.CodeCompletion
 {
@@ -15,11 +16,22 @@ namespace ICSharpCode.CodeCompletion
     {
         protected CompletionWindow completionWindow;
         protected OverloadInsightWindow insightWindow;
+        
+        public static readonly DependencyProperty CompletionProperty;
+
+        static CodeTextEditor()
+        {
+            CompletionProperty = DependencyProperty.Register(
+                    "Completion",
+                    typeof(CSharpCompletion),
+                    typeof(CodeTextEditor),
+                    new FrameworkPropertyMetadata(null));
+        }
 
         public CodeTextEditor()
         {
             TextArea.TextEntering += OnTextEntering;
-            TextArea.TextEntered += OnTextEntered;
+            //TextArea.TextEntered += OnTextEntered; // Disabled cuz of problem with empty completion window
             ShowLineNumbers = true;
 
 
@@ -30,7 +42,11 @@ namespace ICSharpCode.CodeCompletion
             this.CommandBindings.Add(cb);
         }
 
-        public CSharpCompletion Completion { get; set; }
+        public CSharpCompletion Completion
+        {
+            get { return (CSharpCompletion)GetValue(CompletionProperty); }
+            set { SetValue(CompletionProperty, value); }
+        }
 
         #region Open & Save File
         public string FileName { get; set; }
