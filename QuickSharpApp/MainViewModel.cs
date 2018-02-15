@@ -21,17 +21,25 @@ namespace QuickSharpApp
         TriggeringTextWriter _consoleWriter = new TriggeringTextWriter();
         ObservableCollection<RefDto> _refAssemblies = new ObservableCollection<RefDto>()
         {
-            new RefDto { Name = "System.dll" }
+            new RefDto { Name = "System.dll" },
+            new RefDto { Name = "System.Core.dll" },
+            new RefDto { Name = "System.Data.dll" },
+            new RefDto { Name = "System.Linq.dll" },
+            new RefDto { Name = "System.Xml.dll" },
+            new RefDto { Name = "System.Xml.Linq.dll" },
         };
         ICSharpCode.CodeCompletion.CSharpCompletion _completion;
-        string _csharpCode;
+        ICSharpCode.AvalonEdit.Document.TextDocument _doc;
 
         public MainViewModel()
         {
             _completion = new ICSharpCode.CodeCompletion.CSharpCompletion(new ScriptProvider());
             _runCmd = new SimpleCommand(() => Run());
-            CSharpCode = 
+            var code =
                 @"using System;
+using System.IO;
+using System.Linq;
+using System.Text;
 namespace QuickSharp
 {
     public class Program
@@ -42,6 +50,8 @@ namespace QuickSharp
         }
     }
 }";
+            _doc = new ICSharpCode.AvalonEdit.Document.TextDocument(code);
+            _doc.FileName = "code.cs";
             _consoleWriter.CharWritten += x => { _output.Append(x); OnOutputChanged(); };
             _consoleWriter.StringWritten += x => { _output.Append(x); OnOutputChanged(); };
             SetConsoleOutput();
@@ -57,18 +67,18 @@ namespace QuickSharp
             }
         }
 
-        public string CSharpCode
+        public ICSharpCode.AvalonEdit.Document.TextDocument Document
         {
             get
             {
-                return _csharpCode;
+                return _doc;
             }
             set
             {
-                if (_csharpCode != value)
+                if (_doc != value)
                 {
-                    _csharpCode = value;
-                    OnPropertyChanged("CSharpCode");
+                    _doc = value;
+                    OnPropertyChanged("Document");
                 }
             }
         }
@@ -100,7 +110,7 @@ namespace QuickSharp
 
             CSharpCodeProvider provider = new CSharpCodeProvider();
             CompilerParameters parameters = new CompilerParameters();
-            
+
             if (RefAssemblies != null)
             {
                 foreach (var i in RefAssemblies)
@@ -111,13 +121,13 @@ namespace QuickSharp
                     }
                 }
             }
-            
+
             // True - memory generation, false - external file generation
             parameters.GenerateInMemory = true;
             // True - exe file generation, false - dll file generation
             parameters.GenerateExecutable = true;
 
-            CompilerResults results = provider.CompileAssemblyFromSource(parameters, CSharpCode);
+            CompilerResults results = provider.CompileAssemblyFromSource(parameters, _doc.Text);
 
             if (results.Errors.HasErrors)
             {
@@ -146,10 +156,18 @@ namespace QuickSharp
                 OnOutputChanged();
                 return;
             }
-            
+
             OnOutputChanged();
-            
-            main.Invoke(null, null);
+
+            try
+            {
+                main.Invoke(null, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine("Unhandled exception: " + ex.ToString());
+            }
         }
         private void OnOutputChanged()
         {

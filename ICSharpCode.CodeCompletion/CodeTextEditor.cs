@@ -31,7 +31,7 @@ namespace ICSharpCode.CodeCompletion
         public CodeTextEditor()
         {
             TextArea.TextEntering += OnTextEntering;
-            //TextArea.TextEntered += OnTextEntered; // Disabled cuz of problem with empty completion window
+            TextArea.TextEntered += OnTextEntered;
             ShowLineNumbers = true;
 
 

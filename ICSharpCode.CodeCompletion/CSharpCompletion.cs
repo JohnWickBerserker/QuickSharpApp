@@ -12,6 +12,9 @@ using ICSharpCode.NRefactory.TypeSystem;
 using ICSharpCode.NRefactory.Documentation;
 using ICSharpCode.NRefactory.TypeSystem;
 using System.IO;
+using System.Data;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace ICSharpCode.CodeCompletion
 {
@@ -33,6 +36,9 @@ namespace ICSharpCode.CodeCompletion
                     //					typeof(System.Drawing.Bitmap).Assembly, // System.Drawing.dll
                     //					typeof(Form).Assembly, // System.Windows.Forms.dll
                     //					typeof(ICSharpCode.NRefactory.TypeSystem.IProjectContent).Assembly,
+                    typeof(IDbConnection).Assembly, // System.Data.dll
+                    typeof(XmlDocument).Assembly, // System.Xml.dll
+                    typeof(XDocument).Assembly, // System.Xml.Linq.dll
                 };
             }
 

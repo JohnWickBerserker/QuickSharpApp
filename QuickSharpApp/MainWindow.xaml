@@ -44,19 +44,9 @@
                         SyntaxHighlighting="C#"
                         FontSize="10pt"
                         Completion="{Binding Completion, Mode=OneWay}"
+                        Document="{Binding Document}"
                         >
-                        <i:Interaction.Behaviors>
-                            <local:AvalonEditBehavior GiveMeTheText="{Binding CSharpCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                        </i:Interaction.Behaviors>
                     </cc:CodeTextEditor>
-                    <!--<avalonEdit:TextEditor
-                               FontFamily="Consolas"
-                               SyntaxHighlighting="C#"
-                               FontSize="10pt">
-                        <i:Interaction.Behaviors>
-                            <local:AvalonEditBehavior GiveMeTheText="{Binding CSharpCode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-                        </i:Interaction.Behaviors>
-                    </avalonEdit:TextEditor>-->
                 </Border>
             </Grid>
         </Grid>
