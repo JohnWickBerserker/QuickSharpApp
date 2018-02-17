@@ -26,5 +26,10 @@ namespace QuickSharpApp
             InitializeComponent();
             DataContext = new MainViewModel();
         }
+
+        private void MetroWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            CodeEditor.Focus();
+        }
     }
 }
