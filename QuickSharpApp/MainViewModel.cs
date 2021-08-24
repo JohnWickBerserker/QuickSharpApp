@@ -50,9 +50,8 @@ namespace QuickSharp
         {
             _completion = new CSharpCompletion(new ScriptProvider());
             _runCmd = new SimpleCommand(() => Run());
-            _doc = new TextDocument(defaultCode);
+            _doc = new TextDocument(defaultCode) { FileName = "code.cs" };
             defaultRefAssemblies.Select(x => new RefDto { Name = x }).AddToCollection(_refAssemblies);
-            _doc.FileName = "code.cs";
             _output.Changed += () => OnOutputChanged();
             _consoleWriter.CharWritten += x => _output.Append(x);
             _consoleWriter.StringWritten += x => _output.Append(x);
