@@ -1,42 +1,20 @@
-﻿using ICSharpCode.CodeCompletion;
+﻿using ICSharpCode.AvalonEdit.Document;
+using ICSharpCode.CodeCompletion;
 using Microsoft.CSharp;
 using System;
 using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace QuickSharpApp
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        SimpleCommand _runCmd;
-        StringBuilder _output = new StringBuilder();
-        TriggeringTextWriter _consoleWriter = new TriggeringTextWriter();
-        ObservableCollection<RefDto> _refAssemblies = new ObservableCollection<RefDto>()
-        {
-            new RefDto { Name = "System.dll" },
-            new RefDto { Name = "System.Core.dll" },
-            new RefDto { Name = "System.Data.dll" },
-            new RefDto { Name = "System.Linq.dll" },
-            new RefDto { Name = "System.Xml.dll" },
-            new RefDto { Name = "System.Xml.Linq.dll" },
-        };
-        ICSharpCode.CodeCompletion.CSharpCompletion _completion;
-        ICSharpCode.AvalonEdit.Document.TextDocument _doc;
-
-        public MainViewModel()
-        {
-            _completion = new ICSharpCode.CodeCompletion.CSharpCompletion(new ScriptProvider());
-            _runCmd = new SimpleCommand(() => Run());
-            var code =
-                @"using System;
+        private const string defaultCode = @"using System;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -52,11 +30,33 @@ namespace QuickSharp
         }
     }
 }";
-            _doc = new ICSharpCode.AvalonEdit.Document.TextDocument(code);
+        private static readonly string[] defaultRefAssemblies =
+            {
+            "System.dll",
+            "System.Core.dll",
+            "System.Data.dll",
+            "System.Linq.dll",
+            "System.Xml.dll",
+            "System.Xml.Linq.dll"
+            };
+        private SimpleCommand _runCmd;
+        private ObservableStringBuilder _output = new ObservableStringBuilder();
+        private TriggeringTextWriter _consoleWriter = new TriggeringTextWriter();
+        private ObservableCollection<RefDto> _refAssemblies = new ObservableCollection<RefDto>();
+        private CSharpCompletion _completion;
+        private TextDocument _doc;
+
+        public MainViewModel()
+        {
+            _completion = new CSharpCompletion(new ScriptProvider());
+            _runCmd = new SimpleCommand(() => Run());
+            _doc = new TextDocument(defaultCode);
+            defaultRefAssemblies.Select(x => new RefDto { Name = x }).AddToCollection(_refAssemblies);
             _doc.FileName = "code.cs";
-            _consoleWriter.CharWritten += x => { _output.Append(x); OnOutputChanged(); };
-            _consoleWriter.StringWritten += x => { _output.Append(x); OnOutputChanged(); };
-            SetConsoleOutput();
+            _output.Changed += () => OnOutputChanged();
+            _consoleWriter.CharWritten += x => _output.Append(x);
+            _consoleWriter.StringWritten += x => _output.Append(x);
+            SetConsoleOutput(_consoleWriter);
         }
         
         public event PropertyChangedEventHandler PropertyChanged;
@@ -69,7 +69,7 @@ namespace QuickSharp
             }
         }
 
-        public ICSharpCode.AvalonEdit.Document.TextDocument Document
+        public TextDocument Document
         {
             get
             {
@@ -92,6 +92,7 @@ namespace QuickSharp
                 return _refAssemblies;
             }
         }
+
         public ICommand RunCommand
         {
             get
@@ -99,17 +100,43 @@ namespace QuickSharp
                 return _runCmd;
             }
         }
-        public StringBuilder Output
+
+        public ObservableStringBuilder Output
         {
             get
             {
                 return _output;
             }
         }
+
         public void Run()
         {
-            _output.Clear();
+            Output.Clear();
 
+            var results = CompileAssemblyFromText(_doc.Text);
+
+            if (results.Errors.HasErrors)
+            {
+                foreach (CompilerError error in results.Errors)
+                {
+                    Output.AppendLine(string.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
+                }
+            }
+            else
+            {
+                try
+                {
+                    InvokeAssemblyMainMethod(results.CompiledAssembly);
+                }
+                catch (Exception ex)
+                {
+                    Output.AppendLine(ex.Message);
+                }
+            }
+        }
+
+        private CompilerResults CompileAssemblyFromText(string text)
+        {
             CSharpCodeProvider provider = new CSharpCodeProvider();
             CompilerParameters parameters = new CompilerParameters();
 
@@ -129,65 +156,31 @@ namespace QuickSharp
             // True - exe file generation, false - dll file generation
             parameters.GenerateExecutable = true;
 
-            CompilerResults results = provider.CompileAssemblyFromSource(parameters, _doc.Text);
+            CompilerResults result = provider.CompileAssemblyFromSource(parameters, text);
 
-            if (results.Errors.HasErrors)
-            {
-                foreach (CompilerError error in results.Errors)
-                {
-                    Output.AppendLine(String.Format("Error ({0}): {1}", error.ErrorNumber, error.ErrorText));
-                }
-                OnOutputChanged();
-                return;
-            }
-            else
-            {
-                OnOutputChanged();
-            }
-
-            MethodInfo main = null;
-            try
-            {
-                Assembly assembly = results.CompiledAssembly;
-                Type program = assembly.GetType("QuickSharp.Program");
-                main = program.GetMethod("Main");
-            }
-            catch (Exception ex)
-            {
-                Output.AppendLine(ex.Message);
-                OnOutputChanged();
-                return;
-            }
-
-            OnOutputChanged();
-
-            try
-            {
-                main.Invoke(null, null);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine();
-                Console.WriteLine("Unhandled exception: " + ex.ToString());
-            }
+            return result;
         }
+
+        private void InvokeAssemblyMainMethod(Assembly assembly)
+        {
+            Type program = assembly.GetType("QuickSharp.Program");
+            MethodInfo main = program.GetMethod("Main");
+            main.Invoke(null, null);
+        }
+
         private void OnOutputChanged()
         {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs("Output"));
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Output"));
         }
+
         private void OnPropertyChanged(string propertyName)
         {
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
-        private void SetConsoleOutput()
+
+        private void SetConsoleOutput(TextWriter writer)
         {
-            Console.SetOut(_consoleWriter);
+            Console.SetOut(writer);
         }
     }
 }

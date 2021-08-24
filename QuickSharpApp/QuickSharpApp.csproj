@@ -65,7 +65,9 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="AvalonEditBehavior.cs" />
+    <Compile Include="EnumerableExtensions.cs" />
     <Compile Include="ConsoleTextWriter.cs" />
+    <Compile Include="ObservableStringBuilder.cs" />
     <Compile Include="RefDto.cs" />
     <Compile Include="ScriptProvider.cs" />
     <Compile Include="SimpleCommand.cs" />

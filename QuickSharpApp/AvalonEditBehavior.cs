@@ -1,9 +1,5 @@
 ﻿using ICSharpCode.AvalonEdit;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interactivity;
 
@@ -52,7 +48,7 @@ namespace QuickSharpApp
             var behavior = dependencyObject as AvalonEditBehavior;
             if (behavior.AssociatedObject != null)
             {
-                var editor = behavior.AssociatedObject as TextEditor;
+                var editor = behavior.AssociatedObject;
                 if (editor.Document != null)
                 {
                     var caretOffset = editor.CaretOffset;
