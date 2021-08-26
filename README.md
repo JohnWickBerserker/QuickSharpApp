@@ -1,4 +1,6 @@
 # QuickSharpApp
+The app compiles and runs C# code.
+It's a WPF desktop app.
 
 code completion from:
 
